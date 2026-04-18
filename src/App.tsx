@@ -10,6 +10,7 @@ import AuthPage from "./pages/AuthPage";
 import SeekerDashboard from "./pages/SeekerDashboard";
 import RecruiterDashboard from "./pages/RecruiterDashboard";
 import PublicProfile from "./pages/PublicProfile";
+import CompanyProfile from "./pages/CompanyProfile";
 import Navbar from "./components/Navbar";
 
 export type User = {
@@ -52,6 +53,7 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/auth" element={<AuthPage onLogin={login} />} />
           <Route path="/profile/:userId" element={<PublicProfile />} />
+          <Route path="/company/:id" element={<CompanyProfile />} />
           
           <Route 
             path="/dashboard/*" 

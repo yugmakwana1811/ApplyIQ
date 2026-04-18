@@ -12,18 +12,20 @@ datasource db {
 }
 
 model User {
-  id           String        @id @default(cuid())
-  email        String        @unique
-  password     String
-  role         String        @default("SEEKER") // SEEKER, RECRUITER
-  profile      Profile?
-  recruiter    Recruiter?
-  applications Application[]
-  matches      Match[]
-  savedJobs    SavedJob[]
-  memories     Memory[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id               String                   @id @default(cuid())
+  email            String                   @unique
+  password         String
+  role             String                   @default("SEEKER") // SEEKER, RECRUITER
+  profile          Profile?
+  recruiter        Recruiter?
+  applications     Application[]
+  matches          Match[]
+  savedJobs        SavedJob[]
+  memories         Memory[]
+  jobFeedbacks     JobFeedback[]
+  jobPreferences   JobPreference?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
 }
 
 model Profile {
@@ -55,22 +57,26 @@ model Resume {
 }
 
 model Job {
-  id           String        @id @default(cuid())
-  title        String
-  company      String
-  description  String
-  requirements String?
-  location     String?
-  salary       String?
-  type         String? // FULL_TIME, PART_TIME, INTERNSHIP
-  category     String?
-  recruiterId  String?
-  recruiter    Recruiter?    @relation(fields: [recruiterId], references: [id])
-  applications Application[]
-  matches      Match[]
-  savedJobs    SavedJob[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id              String        @id @default(cuid())
+  title           String
+  company         String
+  description     String
+  requirements    String?
+  location        String?
+  salary          String?
+  type            String? // FULL_TIME, PART_TIME, INTERNSHIP
+  category        String?
+  experienceLevel String? // ENTRY, MID_LEVEL, SENIOR, DIRECTOR
+  workMode        String? // REMOTE, HYBRID, ONSITE
+  companySize     String? // STARTUP, MID_SIZE, ENTERPRISE
+  recruiterId     String?
+  recruiter       Recruiter?    @relation(fields: [recruiterId], references: [id])
+  applications    Application[]
+  matches         Match[]
+  savedJobs       SavedJob[]
+  feedbacks       JobFeedback[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 }
 
 model Match {
@@ -101,6 +107,11 @@ model Recruiter {
   user        User    @relation(fields: [userId], references: [id])
   companyName String?
   companyLogo String?
+  description String? 
+  culture     String? // Details about company culture
+  website     String?
+  industry    String?
+  size        String? // 1-10, 11-50, 51-200, etc.
   jobs        Job[]
 }
 
@@ -122,4 +133,30 @@ model SavedJob {
   createdAt DateTime @default(now())
 
   @@unique([userId, jobId])
+}
+
+model JobFeedback {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id])
+  rating    Int      // e.g. 1-5
+  comment   String?
+  issueType String?  // e.g. SPAM, INACCURATE, GREAT_MATCH
+  createdAt DateTime @default(now())
+}
+
+model JobPreference {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id])
+  keywords         String?  // JSON array
+  categories       String?  // JSON array
+  workModes        String?  // JSON array
+  experienceLevels String?  // JSON array
+  emailAlerts      Boolean  @default(false)
+  inAppAlerts      Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }

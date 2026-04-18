@@ -16,6 +16,7 @@ import SeekerJobs from "./seeker/SeekerJobs";
 import SeekerSavedJobs from "./seeker/SeekerSavedJobs";
 import SeekerRoadmap from "./seeker/SeekerRoadmap";
 import SeekerTracker from "./seeker/SeekerTracker";
+import SeekerPreferences from "./seeker/SeekerPreferences";
 
 interface SeekerDashboardProps {
   user: User;
@@ -73,6 +74,12 @@ export default function SeekerDashboard({ user }: SeekerDashboardProps) {
               icon={<ClipboardList size={20} />} 
               label="Applications" 
             />
+            <SidebarLink 
+              to="/dashboard/preferences" 
+              active={location.pathname === "/dashboard/preferences"}
+              icon={<Settings size={20} />} 
+              label="Preferences" 
+            />
           </nav>
         </div>
 
@@ -101,6 +108,7 @@ export default function SeekerDashboard({ user }: SeekerDashboardProps) {
             <Route path="/saved" element={<SeekerSavedJobs user={user} />} />
             <Route path="/roadmap" element={<SeekerRoadmap user={user} />} />
             <Route path="/tracker" element={<SeekerTracker user={user} />} />
+            <Route path="/preferences" element={<SeekerPreferences user={user} />} />
           </Routes>
         </div>
       </main>

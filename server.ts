@@ -127,16 +127,22 @@ async function startServer() {
   // --- JOB ROUTES ---
   app.get("/api/jobs", async (req, res) => {
     try {
-      const { query, category } = req.query;
+      const { query, category, requirements, experienceLevel, workMode, companySize } = req.query;
       const jobs = await prisma.job.findMany({
         where: {
           OR: query ? [
             { title: { contains: query as string } },
             { description: { contains: query as string } },
+            { company: { contains: query as string } }
           ] : undefined,
           category: category ? (category as string) : undefined,
+          requirements: requirements ? { contains: requirements as string } : undefined,
+          experienceLevel: experienceLevel ? (experienceLevel as string) : undefined,
+          workMode: workMode ? (workMode as string) : undefined,
+          companySize: companySize ? (companySize as string) : undefined,
         },
         orderBy: { createdAt: "desc" },
+        include: { recruiter: true }
       });
       res.json(jobs);
     } catch (error: any) {
@@ -146,11 +152,100 @@ async function startServer() {
 
   app.post("/api/jobs", async (req, res) => {
     try {
-      const { title, company, description, requirements, location, salary, type, category, recruiterId } = req.body;
+      const { title, company, description, requirements, location, salary, type, category, experienceLevel, workMode, companySize, recruiterId } = req.body;
       const job = await prisma.job.create({
-        data: { title, company, description, requirements, location, salary, type, category, recruiterId },
+        data: { title, company, description, requirements, location, salary, type, category, experienceLevel, workMode, companySize, recruiterId },
       });
       res.json(job);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/jobs/:jobId/feedback", async (req, res) => {
+    try {
+      const { userId, rating, comment, issueType } = req.body;
+      const feedback = await prisma.jobFeedback.create({
+        data: {
+          userId,
+          jobId: req.params.jobId,
+          rating: Number(rating),
+          comment,
+          issueType
+        }
+      });
+      res.json(feedback);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // --- COMPANIES ROUTES ---
+  app.get("/api/companies", async (req, res) => {
+    try {
+      const companies = await prisma.recruiter.findMany({
+        where: { companyName: { not: null } }
+      });
+      res.json(companies);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/companies/:id", async (req, res) => {
+    try {
+      const company = await prisma.recruiter.findUnique({
+        where: { id: req.params.id },
+        include: { jobs: true }
+      });
+      if (!company) return res.status(404).json({ error: "Company not found" });
+      res.json(company);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // --- PREFERENCES ROUTES ---
+  app.get("/api/preferences/:userId", async (req, res) => {
+    try {
+      let pref = await prisma.jobPreference.findUnique({
+        where: { userId: req.params.userId }
+      });
+      if (!pref) {
+        pref = await prisma.jobPreference.create({
+          data: { userId: req.params.userId }
+        });
+      }
+      res.json(pref);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put("/api/preferences/:userId", async (req, res) => {
+    try {
+      const { keywords, categories, workModes, experienceLevels, emailAlerts, inAppAlerts } = req.body;
+      const pref = await prisma.jobPreference.upsert({
+        where: { userId: req.params.userId },
+        update: {
+          keywords: JSON.stringify(keywords || []),
+          categories: JSON.stringify(categories || []),
+          workModes: JSON.stringify(workModes || []),
+          experienceLevels: JSON.stringify(experienceLevels || []),
+          emailAlerts,
+          inAppAlerts
+        },
+        create: {
+          userId: req.params.userId,
+          keywords: JSON.stringify(keywords || []),
+          categories: JSON.stringify(categories || []),
+          workModes: JSON.stringify(workModes || []),
+          experienceLevels: JSON.stringify(experienceLevels || []),
+          emailAlerts,
+          inAppAlerts
+        }
+      });
+      res.json(pref);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

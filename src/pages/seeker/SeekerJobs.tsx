@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { User } from "../../App";
 import { motion, AnimatePresence } from "motion/react";
-import { Search, Filter, ArrowRight, Briefcase, MapPin, DollarSign, Star, Zap, Loader2, Sparkles, X, FileText, ScrollText, Bookmark } from "lucide-react";
+import { Search, Filter, ArrowRight, Briefcase, MapPin, DollarSign, Star, Zap, Loader2, Sparkles, X, FileText, ScrollText, Bookmark, Building, MessageSquareWarning } from "lucide-react";
 import { aiService } from "../../services/aiService";
 
 export default function SeekerJobs({ user }: { user: User }) {
@@ -16,12 +16,23 @@ export default function SeekerJobs({ user }: { user: User }) {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
   const [savedJobs, setSavedJobs] = useState<string[]>([]);
+  const [category, setCategory] = useState("All Roles");
+  const [requirements, setRequirements] = useState("");
+  const [experienceLevel, setExperienceLevel] = useState("");
+  const [workMode, setWorkMode] = useState("");
+  const [companySize, setCompanySize] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
 
   useEffect(() => {
-    fetchJobs();
     fetchProfile();
     fetchSavedJobs();
   }, []);
+
+  useEffect(() => {
+    fetchJobs();
+  }, [category]);
 
   const fetchSavedJobs = async () => {
     try {
@@ -51,13 +62,39 @@ export default function SeekerJobs({ user }: { user: User }) {
   const fetchJobs = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/jobs?query=${query}`);
+      const q = new URLSearchParams();
+      if (query) q.append("query", query);
+      if (category && category !== "All Roles") q.append("category", category);
+      if (requirements) q.append("requirements", requirements);
+      if (experienceLevel) q.append("experienceLevel", experienceLevel);
+      if (workMode) q.append("workMode", workMode);
+      if (companySize) q.append("companySize", companySize);
+
+      const res = await fetch(`/api/jobs?${q.toString()}`);
       const data = await res.json();
       setJobs(data);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const submitFeedback = async (jobId: string) => {
+    if (!feedbackText.trim()) return;
+    setSubmittingFeedback(true);
+    try {
+      await fetch(`/api/jobs/${jobId}/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user?.id, rating: 3, comment: feedbackText, issueType: "REPORT" })
+      });
+      alert("Feedback submitted. Thank you!");
+      setFeedbackText("");
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmittingFeedback(false);
     }
   };
 
@@ -121,6 +158,12 @@ export default function SeekerJobs({ user }: { user: User }) {
                 />
             </div>
             <button 
+                onClick={() => setShowFilters(!showFilters)}
+                className={`p-2 rounded-xl transition-colors ${showFilters ? 'bg-[#F27D26] text-white' : 'text-[#141414]/40 hover:bg-[#F5F5F0]'}`}
+            >
+                <Filter size={18} />
+            </button>
+            <button 
                 onClick={fetchJobs}
                 className="bg-[#141414] text-[#F5F5F0] px-4 py-2 rounded-xl text-xs font-bold hover:opacity-90 transition-opacity"
             >
@@ -129,10 +172,81 @@ export default function SeekerJobs({ user }: { user: User }) {
         </div>
       </header>
 
+      <AnimatePresence>
+        {showFilters && (
+            <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="bg-white p-6 rounded-[2rem] border border-[#141414]/5 overflow-hidden"
+            >
+                <div className="space-y-4">
+                   <div>
+                       <label className="block text-xs uppercase font-bold tracking-widest text-[#141414]/40 mb-2 ml-1">Required Skills / Qualifications</label>
+                       <input
+                           type="text"
+                           placeholder="e.g. React, TypeScript, 5+ years experience"
+                           className="w-full px-4 py-3 bg-[#F5F5F0] rounded-xl outline-none text-sm focus:ring-2 focus:ring-[#F27D26]/50 transition-all font-medium"
+                           value={requirements}
+                           onChange={(e) => setRequirements(e.target.value)}
+                           onKeyDown={(e) => e.key === 'Enter' && fetchJobs()}
+                       />
+                   </div>
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                       <div>
+                           <label className="block text-xs uppercase font-bold tracking-widest text-[#141414]/40 mb-2 ml-1">Experience Level</label>
+                           <select 
+                               value={experienceLevel} 
+                               onChange={(e) => setExperienceLevel(e.target.value)}
+                               className="w-full px-4 py-3 bg-[#F5F5F0] rounded-xl outline-none text-sm focus:ring-2 focus:ring-[#F27D26]/50 transition-all font-medium appearance-none"
+                           >
+                               <option value="">Any Level</option>
+                               <option value="Entry Level">Entry Level</option>
+                               <option value="Mid Level">Mid Level</option>
+                               <option value="Senior">Senior</option>
+                               <option value="Director">Director</option>
+                           </select>
+                       </div>
+                       <div>
+                           <label className="block text-xs uppercase font-bold tracking-widest text-[#141414]/40 mb-2 ml-1">Work Mode</label>
+                           <select 
+                               value={workMode} 
+                               onChange={(e) => setWorkMode(e.target.value)}
+                               className="w-full px-4 py-3 bg-[#F5F5F0] rounded-xl outline-none text-sm focus:ring-2 focus:ring-[#F27D26]/50 transition-all font-medium appearance-none"
+                           >
+                               <option value="">Any Mode</option>
+                               <option value="Remote">Remote</option>
+                               <option value="Hybrid">Hybrid</option>
+                               <option value="Onsite">Onsite</option>
+                           </select>
+                       </div>
+                       <div>
+                           <label className="block text-xs uppercase font-bold tracking-widest text-[#141414]/40 mb-2 ml-1">Company Size</label>
+                           <select 
+                               value={companySize} 
+                               onChange={(e) => setCompanySize(e.target.value)}
+                               className="w-full px-4 py-3 bg-[#F5F5F0] rounded-xl outline-none text-sm focus:ring-2 focus:ring-[#F27D26]/50 transition-all font-medium appearance-none"
+                           >
+                               <option value="">Any Size</option>
+                               <option value="Startup">Startup (1-50)</option>
+                               <option value="Mid-size">Mid-size (51-500)</option>
+                               <option value="Enterprise">Enterprise (500+)</option>
+                           </select>
+                       </div>
+                   </div>
+                </div>
+            </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Categories */}
       <div className="flex gap-2 overflow-x-auto pb-2 -mx-2 px-2 scrollbar-none">
         {["All Roles", "Engineering", "Design", "Marketing", "Management", "Sales"].map(cat => (
-            <button key={cat} className="px-5 py-2 whitespace-nowrap bg-white border border-[#141414]/5 rounded-xl text-xs font-bold hover:bg-[#141414] hover:text-[#F5F5F0] transition-all">
+            <button 
+                key={cat} 
+                onClick={() => setCategory(cat)}
+                className={`px-5 py-2 whitespace-nowrap border rounded-xl text-xs font-bold transition-all ${category === cat ? 'bg-[#141414] text-[#F5F5F0] border-[#141414]' : 'bg-white border-[#141414]/5 hover:bg-[#141414] hover:text-[#F5F5F0]'}`}
+            >
                 {cat}
             </button>
         ))}
@@ -161,8 +275,13 @@ export default function SeekerJobs({ user }: { user: User }) {
                         </div>
                         <h3 className="text-xl font-bold mb-2 group-hover:text-[#F27D26] transition-colors">{job.title}</h3>
                         <div className="flex items-center gap-4 text-sm text-[#141414]/40 mb-6 font-medium">
-                            <div className="flex items-center gap-1.5"><Briefcase size={14} /> {job.company}</div>
+                            {job.recruiterId ? (
+                               <a href={`/company/${job.recruiterId}`} className="flex items-center gap-1.5 hover:text-[#F27D26] transition-colors"><Building size={14} /> {job.company}</a>
+                            ) : (
+                               <div className="flex items-center gap-1.5"><Briefcase size={14} /> {job.company}</div>
+                            )}
                             <div className="flex items-center gap-1.5"><MapPin size={14} /> {job.location || 'Remote'}</div>
+                            {job.experienceLevel && <div className="flex items-center gap-1.5"><Star size={14} /> {job.experienceLevel}</div>}
                         </div>
                         <p className="text-sm text-[#141414]/60 line-clamp-2 mb-8 leading-relaxed">{job.description}</p>
                     </div>
@@ -289,27 +408,49 @@ export default function SeekerJobs({ user }: { user: User }) {
                                 </button>
                             </div>
                         ) : (
-                            <div className="flex flex-col sm:flex-row gap-4">
-                                <button 
-                                   onClick={async () => {
-                                       setGeneratingLetter(true);
-                                       const res = await aiService.generateCoverLetter(profile, selectedJob);
-                                       setCoverLetterText(res.coverLetter);
-                                       setShowCoverLetter(true);
-                                       setGeneratingLetter(false);
-                                   }}
-                                   disabled={generatingLetter}
-                                   className="flex-1 py-5 bg-[#F5F5F0] text-[#141414] border border-[#141414]/10 rounded-2xl font-bold text-lg hover:bg-white transition-all flex items-center justify-center gap-2 hover:border-[#F27D26]"
-                                >
-                                    {generatingLetter ? <Loader2 className="animate-spin text-[#F27D26]" size={20} /> : <><FileText size={20} className="text-[#F27D26]" /> AI Cover Letter</>}
-                                </button>
-                                <button 
-                                   onClick={handleApply}
-                                   className="flex-1 py-5 bg-[#141414] text-[#F5F5F0] rounded-2xl font-bold text-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-                                >
-                                    Quick Apply <ArrowRight size={20} />
-                                </button>
-                            </div>
+                            <>
+                                <div className="flex flex-col sm:flex-row gap-4 mb-8">
+                                    <button 
+                                       onClick={async () => {
+                                           setGeneratingLetter(true);
+                                           const res = await aiService.generateCoverLetter(profile, selectedJob);
+                                           setCoverLetterText(res.coverLetter);
+                                           setShowCoverLetter(true);
+                                           setGeneratingLetter(false);
+                                       }}
+                                       disabled={generatingLetter}
+                                       className="flex-1 py-5 bg-[#F5F5F0] text-[#141414] border border-[#141414]/10 rounded-2xl font-bold text-lg hover:bg-white transition-all flex items-center justify-center gap-2 hover:border-[#F27D26]"
+                                    >
+                                        {generatingLetter ? <Loader2 className="animate-spin text-[#F27D26]" size={20} /> : <><FileText size={20} className="text-[#F27D26]" /> AI Cover Letter</>}
+                                    </button>
+                                    <button 
+                                       onClick={handleApply}
+                                       className="flex-1 py-5 bg-[#141414] text-[#F5F5F0] rounded-2xl font-bold text-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                                    >
+                                        Quick Apply <ArrowRight size={20} />
+                                    </button>
+                                </div>
+                                
+                                <div className="p-6 bg-white border border-[#141414]/5 rounded-2xl">
+                                    <h4 className="text-xs uppercase font-bold tracking-[0.2em] text-[#141414]/40 mb-4 flex items-center gap-2"><MessageSquareWarning size={16} /> Job Feedback</h4>
+                                    <div className="flex gap-2">
+                                      <input 
+                                        type="text" 
+                                        value={feedbackText}
+                                        onChange={(e) => setFeedbackText(e.target.value)}
+                                        placeholder="Report issue or share feedback on this listing..."
+                                        className="flex-1 bg-[#F5F5F0] px-4 py-2 text-sm rounded-xl outline-none"
+                                      />
+                                      <button 
+                                        onClick={() => submitFeedback(selectedJob.id)}
+                                        disabled={submittingFeedback}
+                                        className="bg-[#141414] text-white px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap"
+                                      >
+                                        {submittingFeedback ? <Loader2 className="animate-spin" size={14} /> : "Submit"}
+                                      </button>
+                                    </div>
+                                </div>
+                            </>
                         )}
                     </div>
                 </motion.div>
