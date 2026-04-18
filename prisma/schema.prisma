@@ -1,0 +1,112 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  password     String
+  role         String        @default("SEEKER") // SEEKER, RECRUITER
+  profile      Profile?
+  recruiter    Recruiter?
+  applications Application[]
+  matches      Match[]
+  memories     Memory[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Profile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id])
+  name         String?
+  headline     String?
+  bio          String?
+  skills       String? // JSON string
+  education    String? // JSON string
+  experience   String? // JSON string
+  projects     String? // JSON string
+  achievements String? // JSON string
+  resume       Resume?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Resume {
+  id         String   @id @default(cuid())
+  profileId  String   @unique
+  profile    Profile  @relation(fields: [profileId], references: [id])
+  content    String?
+  fileUrl    String?
+  parsedData String? // JSON string
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Job {
+  id           String        @id @default(cuid())
+  title        String
+  company      String
+  description  String
+  requirements String?
+  location     String?
+  salary       String?
+  type         String? // FULL_TIME, PART_TIME, INTERNSHIP
+  category     String?
+  recruiterId  String?
+  recruiter    Recruiter?    @relation(fields: [recruiterId], references: [id])
+  applications Application[]
+  matches      Match[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Match {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id])
+  score     Int
+  reasoning String?
+  createdAt DateTime @default(now())
+}
+
+model Application {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  jobId       String
+  job         Job      @relation(fields: [jobId], references: [id])
+  status      String   @default("PENDING") // PENDING, SHORTLISTED, REJECTED
+  coverLetter String?
+  appliedAt   DateTime @default(now())
+}
+
+model Recruiter {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id])
+  companyName String?
+  companyLogo String?
+  jobs        Job[]
+}
+
+model Memory {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String // IMPROVEMENT, MATCH, CLICK
+  data      String // JSON string
+  createdAt DateTime @default(now())
+}
