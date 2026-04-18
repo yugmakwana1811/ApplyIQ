@@ -195,6 +195,42 @@ async function startServer() {
     }
   });
 
+  // --- SAVED JOBS ---
+  app.post("/api/saved-jobs", async (req, res) => {
+    try {
+      const { userId, jobId } = req.body;
+      const existing = await prisma.savedJob.findUnique({
+        where: { userId_jobId: { userId, jobId } }
+      });
+      if (existing) {
+        await prisma.savedJob.delete({
+          where: { id: existing.id }
+        });
+        res.json({ saved: false });
+      } else {
+        await prisma.savedJob.create({
+          data: { userId, jobId }
+        });
+        res.json({ saved: true });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/saved-jobs/:userId", async (req, res) => {
+    try {
+      const savedJobs = await prisma.savedJob.findMany({
+        where: { userId: req.params.userId },
+        include: { job: true },
+        orderBy: { createdAt: "desc" },
+      });
+      res.json(savedJobs);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // --- VITE MIDDLEWARE ---
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

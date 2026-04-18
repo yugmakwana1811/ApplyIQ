@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { User } from "../../App";
 import { motion, AnimatePresence } from "motion/react";
-import { Search, Filter, ArrowRight, Briefcase, MapPin, DollarSign, Star, Zap, Loader2, Sparkles, X, FileText, ScrollText } from "lucide-react";
+import { Search, Filter, ArrowRight, Briefcase, MapPin, DollarSign, Star, Zap, Loader2, Sparkles, X, FileText, ScrollText, Bookmark } from "lucide-react";
 import { aiService } from "../../services/aiService";
 
 export default function SeekerJobs({ user }: { user: User }) {
@@ -15,11 +15,38 @@ export default function SeekerJobs({ user }: { user: User }) {
   const [generatingLetter, setGeneratingLetter] = useState(false);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
+  const [savedJobs, setSavedJobs] = useState<string[]>([]);
 
   useEffect(() => {
     fetchJobs();
     fetchProfile();
+    fetchSavedJobs();
   }, []);
+
+  const fetchSavedJobs = async () => {
+    try {
+      const res = await fetch(`/api/saved-jobs/${user?.id}`);
+      const data = await res.json();
+      setSavedJobs(data.map((sj: any) => sj.jobId));
+    } catch (err) { console.error(err); }
+  };
+
+  const handleToggleSave = async (jobId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const res = await fetch("/api/saved-jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user?.id, jobId })
+      });
+      const data = await res.json();
+      if (data.saved) {
+        setSavedJobs(prev => [...prev, jobId]);
+      } else {
+        setSavedJobs(prev => prev.filter(id => id !== jobId));
+      }
+    } catch (err) { console.error(err); }
+  };
 
   const fetchJobs = async () => {
     setLoading(true);
@@ -125,8 +152,11 @@ export default function SeekerJobs({ user }: { user: User }) {
                             <div className="w-14 h-14 bg-[#F5F5F0] rounded-2xl flex items-center justify-center font-bold text-2xl text-[#141414]/20">
                                 {job.company[0]}
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 items-center">
                                 <span className="px-3 py-1 bg-green-50 text-green-700 text-[10px] uppercase font-bold tracking-widest rounded-full">{job.type || 'Full Time'}</span>
+                                <button onClick={(e) => handleToggleSave(job.id, e)} className="text-[#141414]/40 hover:text-[#F27D26] transition-colors p-1">
+                                    <Bookmark size={20} className={savedJobs.includes(job.id) ? "fill-[#F27D26] text-[#F27D26]" : ""} />
+                                </button>
                             </div>
                         </div>
                         <h3 className="text-xl font-bold mb-2 group-hover:text-[#F27D26] transition-colors">{job.title}</h3>

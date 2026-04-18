@@ -20,6 +20,7 @@ model User {
   recruiter    Recruiter?
   applications Application[]
   matches      Match[]
+  savedJobs    SavedJob[]
   memories     Memory[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -67,6 +68,7 @@ model Job {
   recruiter    Recruiter?    @relation(fields: [recruiterId], references: [id])
   applications Application[]
   matches      Match[]
+  savedJobs    SavedJob[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 }
@@ -109,4 +111,15 @@ model Memory {
   type      String // IMPROVEMENT, MATCH, CLICK
   data      String // JSON string
   createdAt DateTime @default(now())
+}
+
+model SavedJob {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, jobId])
 }

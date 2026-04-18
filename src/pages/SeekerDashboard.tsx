@@ -6,12 +6,14 @@ import {
   Search, 
   Map, 
   ClipboardList, 
+  Bookmark,
   Settings,
   Zap
 } from "lucide-react";
 import SeekerOverview from "./seeker/SeekerOverview";
 import SeekerResume from "./seeker/SeekerResume";
 import SeekerJobs from "./seeker/SeekerJobs";
+import SeekerSavedJobs from "./seeker/SeekerSavedJobs";
 import SeekerRoadmap from "./seeker/SeekerRoadmap";
 import SeekerTracker from "./seeker/SeekerTracker";
 
@@ -54,6 +56,12 @@ export default function SeekerDashboard({ user }: SeekerDashboardProps) {
               label="Job Matches" 
             />
             <SidebarLink 
+              to="/dashboard/saved" 
+              active={location.pathname === "/dashboard/saved"}
+              icon={<Bookmark size={20} />} 
+              label="Saved Jobs" 
+            />
+            <SidebarLink 
               to="/dashboard/roadmap" 
               active={location.pathname === "/dashboard/roadmap"}
               icon={<Map size={20} />} 
@@ -90,6 +98,7 @@ export default function SeekerDashboard({ user }: SeekerDashboardProps) {
             <Route path="/overview" element={<SeekerOverview user={user} />} />
             <Route path="/resume" element={<SeekerResume user={user} />} />
             <Route path="/jobs" element={<SeekerJobs user={user} />} />
+            <Route path="/saved" element={<SeekerSavedJobs user={user} />} />
             <Route path="/roadmap" element={<SeekerRoadmap user={user} />} />
             <Route path="/tracker" element={<SeekerTracker user={user} />} />
           </Routes>
